@@ -1,0 +1,13 @@
+.git
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.db
+*.db-journal
+.pytest_cache/
+tests/
+plantillas/
+ENUNCIADO.md
+verificar_entrega.py
