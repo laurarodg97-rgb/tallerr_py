@@ -1,1 +1,16 @@
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Configuracion local
+.env
+
+# Bases de datos locales
+*.db
+*.db-journal
