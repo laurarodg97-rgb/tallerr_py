@@ -1,8 +1,8 @@
 """Esquemas de entrada."""
 from datetime import date, datetime
-from typing import Optional
+from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class SiniestroDetalleSalida(BaseModel):
@@ -60,31 +60,52 @@ class PrediccionSalida(BaseModel):
 
 
 class SiniestroEntrada(BaseModel):
-    fecha: date
+    fecha: date = Field(description="Fecha en que se declaró el siniestro")
     monto: float = Field(gt=0, description="Monto reclamado, en pesos")
     descripcion: str = Field(min_length=3, max_length=200)
-    estado: str = "abierto"
+    estado: Literal["abierto", "pagado", "rechazado"] = "abierto"
 
 
 class PolizaEntrada(BaseModel):
     numero: str = Field(min_length=8, max_length=20, description="Formato POL-AAAA-NNNNN")
     asegurado: str = Field(min_length=3, max_length=80)
-    tipo: str = Field(description="auto, hogar o vida")
+    tipo: Literal["auto", "hogar", "vida"] = Field(description="Ramo de la póliza")
     prima: float = Field(gt=0, description="Prima anual, en pesos")
     fecha_inicio: date
     fecha_fin: date
-    siniestros: list[dict] = Field(default_factory=list, description="Siniestros ya declarados")
+    siniestros: list[SiniestroEntrada] = Field(
+        default_factory=list,
+        description="Siniestros ya declarados",
+    )
 
-    @field_validator("asegurado")
+    @field_validator("numero", mode="before")
     @classmethod
-    def normalizar_asegurado(cls, v: str) -> str:
+    def normalizar_numero(cls, valor: Any) -> Any:
+        """Elimina espacios periféricos del identificador de póliza."""
+
+        return valor.strip() if isinstance(valor, str) else valor
+
+    @field_validator("asegurado", mode="before")
+    @classmethod
+    def normalizar_asegurado(cls, v: Any) -> Any:
         """Quita espacios sobrantes y pone el nombre con mayúscula inicial."""
-        " ".join(v.split()).title()
+
+        if not isinstance(v, str):
+            return v
+        return " ".join(v.split()).title()
+
+    @model_validator(mode="after")
+    def validar_vigencia(self) -> "PolizaEntrada":
+        """La fecha de cierre debe ser posterior al comienzo de vigencia."""
+
+        if self.fecha_fin <= self.fecha_inicio:
+            raise ValueError("fecha_fin debe ser posterior a fecha_inicio")
+        return self
 
 
 class PolizaActualizacion(BaseModel):
     asegurado: Optional[str] = Field(default=None, min_length=3, max_length=80)
-    tipo: Optional[str] = None
+    tipo: Optional[Literal["auto", "hogar", "vida"]] = None
     prima: Optional[float] = Field(default=None, gt=0)
     fecha_fin: Optional[date] = None
 
