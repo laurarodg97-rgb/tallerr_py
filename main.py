@@ -7,8 +7,8 @@ import pickle
 from datetime import date
 
 from fastapi import Depends, FastAPI, HTTPException, status
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from config import Settings, get_settings
@@ -21,6 +21,7 @@ from esquemas import (
     PuntuacionEntrada,
     PuntuacionSalida,
     ResumenPolizaSalida,
+    HealthSalida,
     SiniestroEntrada,
     SiniestroSalida,
 )
@@ -48,6 +49,18 @@ def _poliza(p: Poliza) -> dict:
         "siniestros": [{"id": s.id, "fecha": s.fecha, "monto": s.monto,
                         "descripcion": s.descripcion, "estado": s.estado} for s in p.siniestros],
     }
+
+
+@app.get("/health", response_model=HealthSalida)
+def health(db: Session = Depends(get_db)) -> dict[str, str]:
+    """Comprueba que el proceso responde y que la base acepta una consulta."""
+
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        db.rollback()
+        return {"estado": "degradado", "base_datos": "error"}
+    return {"estado": "ok", "base_datos": "ok"}
 
 
 @app.post("/polizas", response_model=PolizaSalida, status_code=status.HTTP_201_CREATED)

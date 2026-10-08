@@ -59,6 +59,11 @@ class PrediccionSalida(BaseModel):
     creado_en: datetime
 
 
+class HealthSalida(BaseModel):
+    estado: Literal["ok", "degradado"]
+    base_datos: Literal["ok", "error"]
+
+
 class SiniestroEntrada(BaseModel):
     fecha: date = Field(description="Fecha en que se declaró el siniestro")
     monto: float = Field(gt=0, description="Monto reclamado, en pesos")
