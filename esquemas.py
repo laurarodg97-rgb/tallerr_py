@@ -1,8 +1,62 @@
 """Esquemas de entrada."""
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class SiniestroDetalleSalida(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    fecha: date
+    monto: float
+    descripcion: str
+    estado: str
+
+
+class PolizaSalida(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    numero: str
+    asegurado: str | None
+    tipo: str | None
+    prima: float
+    fecha_inicio: date
+    fecha_fin: date | None
+    siniestros: list[SiniestroDetalleSalida]
+
+
+class SiniestroSalida(BaseModel):
+    id: int
+    poliza_id: int
+    numero_poliza: str
+    fecha: date
+    monto: float
+    descripcion: str
+    estado: str
+
+
+class ResumenPolizaSalida(BaseModel):
+    numero: str
+    n_siniestros: int
+    monto_total: float
+
+
+class PuntuacionSalida(BaseModel):
+    numero: str
+    puntaje: float = Field(ge=0, le=1)
+    alto_riesgo: bool
+
+
+class PrediccionSalida(BaseModel):
+    id: int
+    poliza_id: int
+    numero: str
+    puntaje: float = Field(ge=0, le=1)
+    alto_riesgo: bool
+    creado_en: datetime
 
 
 class SiniestroEntrada(BaseModel):
